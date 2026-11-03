@@ -742,6 +742,91 @@ export const PadManagerModal: React.FC<PadManagerModalProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* 7. INDIVIDUAL RIGHT COLUMN DATA FIELDS & MRZ LINES */}
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                    <span>৭. ডান কলামের নির্দিষ্ট লাইনসমূহ (Visa No, Issue Date, Reference, Birth Date)</span>
+                  </span>
+                  <span className="text-[11px] text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 font-medium">
+                    আলাদা আলাদা উপর/নিচ
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {renderSlider(
+                    'Visa Number উপরে/নিচে (Y)',
+                    calibration.visaNumberYOffset || 0,
+                    'visaNumberYOffset',
+                    -60,
+                    60
+                  )}
+                  {renderSlider(
+                    'Visa Number ডানে/বামে (X)',
+                    calibration.visaNumberXOffset || 0,
+                    'visaNumberXOffset',
+                    -100,
+                    100
+                  )}
+                  {renderSlider(
+                    'Issue Date উপরে/নিচে (Y)',
+                    calibration.issueDateYOffset || 0,
+                    'issueDateYOffset',
+                    -60,
+                    60
+                  )}
+                  {renderSlider(
+                    'Issue Date ডানে/বামে (X)',
+                    calibration.issueDateXOffset || 0,
+                    'issueDateXOffset',
+                    -100,
+                    100
+                  )}
+                  {renderSlider(
+                    'Reference No. উপরে/নিচে (Y)',
+                    calibration.referenceNumberYOffset || 0,
+                    'referenceNumberYOffset',
+                    -60,
+                    60
+                  )}
+                  {renderSlider(
+                    'Reference No. ডানে/বামে (X)',
+                    calibration.referenceNumberXOffset || 0,
+                    'referenceNumberXOffset',
+                    -100,
+                    100
+                  )}
+                  {renderSlider(
+                    'Birth Date উপরে/নিচে (Y)',
+                    calibration.birthDateYOffset || 0,
+                    'birthDateYOffset',
+                    -60,
+                    60
+                  )}
+                  {renderSlider(
+                    'Birth Date ডানে/বামে (X)',
+                    calibration.birthDateXOffset || 0,
+                    'birthDateXOffset',
+                    -100,
+                    100
+                  )}
+                  {renderSlider(
+                    'MRZ লাইন ১ উপরে/নিচে (Y)',
+                    calibration.mrzLine1YOffset || 0,
+                    'mrzLine1YOffset',
+                    -40,
+                    40
+                  )}
+                  {renderSlider(
+                    'MRZ লাইন ২ উপরে/নিচে (Y)',
+                    calibration.mrzLine2YOffset || 0,
+                    'mrzLine2YOffset',
+                    -40,
+                    40
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

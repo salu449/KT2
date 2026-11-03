@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  MoveVertical,
 } from 'lucide-react';
 import {
   PadCalibration,
@@ -639,6 +640,8 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
           const currentSize = custom.fontSize !== undefined ? custom.fontSize : def.defaultFontSize + (calibration.fontSizeOffset || 0);
           const currentWeight = custom.fontWeight || def.defaultFontWeight;
           const currentSpacing = custom.letterSpacing || (def.category === 'mrz' ? '0.08em' : 'normal');
+          const currentYOffset = custom.yOffset || 0;
+          const currentXOffset = custom.xOffset || 0;
           const isVisible = custom.visible !== false;
           const isExpanded = expandedKey === def.key;
 
@@ -685,13 +688,52 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
                       <span>•</span>
                       <span className="font-mono font-bold text-sky-700">{currentSize}px</span>
                       <span>•</span>
-                      <span>{currentWeight === 'bold' ? 'বোল্ড' : currentWeight === 'normal' ? 'নরমাল' : 'এক্সট্রা বোল্ড'}</span>
+                      <span>{currentWeight === 'bold' ? 'বোল্ড' : currentWeight === 'normal' ? 'নরমাল' : 'মোটা'}</span>
+                      {currentYOffset !== 0 && (
+                        <>
+                          <span className="text-slate-300">•</span>
+                          <span className="font-mono text-indigo-700 font-bold bg-indigo-50 px-1 rounded">
+                            Y: {currentYOffset > 0 ? `+${currentYOffset}` : currentYOffset}px
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Right Quick Controls */}
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Quick Y-Offset Stepper (Up/Down) */}
+                  <div
+                    className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200"
+                    title="এই লাইনের পজিশন উপরে/নিচে সরান (Y-Offset)"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateLine(def.key, { yOffset: currentYOffset - 1 })}
+                      className="w-6 h-6 rounded bg-white hover:bg-sky-50 active:bg-sky-100 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                      title="১ পিক্সেল উপরে তুলুন (-1px)"
+                    >
+                      ↑
+                    </button>
+                    <span
+                      className={`text-[10px] font-mono font-bold min-w-[38px] text-center px-0.5 select-none ${
+                        currentYOffset !== 0 ? 'text-indigo-700 font-extrabold' : 'text-slate-600'
+                      }`}
+                      title={`বর্তমান Y অফসেট: ${currentYOffset}px`}
+                    >
+                      {currentYOffset > 0 ? `+${currentYOffset}` : currentYOffset}px
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateLine(def.key, { yOffset: currentYOffset + 1 })}
+                      className="w-6 h-6 rounded bg-white hover:bg-sky-50 active:bg-sky-100 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                      title="১ পিক্সেল নিচে নামান (+1px)"
+                    >
+                      ↓
+                    </button>
+                  </div>
+
                   {/* Quick Font Size Stepper */}
                   <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
                     <button
@@ -724,7 +766,7 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
                         ? 'bg-sky-50 border-sky-300 text-sky-700'
                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
-                    title="বিস্তারিত ফন্ট সেটিংস খুলুন"
+                    title="বিস্তারিত ফন্ট ও পজিশন সেটিংস খুলুন"
                   >
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
@@ -873,6 +915,153 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
                         />
                         <span>প্রিন্টে এই লাইনটি প্রদর্শন করুন</span>
                       </label>
+                    </div>
+                  </div>
+
+                  {/* Individual Line Position Adjustment (Up/Down Y-Offset & Left/Right X-Offset) */}
+                  <div className="bg-white p-3 rounded-xl border border-sky-200/90 shadow-2xs space-y-2.5 mt-2">
+                    <div className="flex items-center justify-between border-b border-sky-100 pb-1.5">
+                      <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
+                        <MoveVertical className="w-3.5 h-3.5 text-sky-600" />
+                        <span>এই লাইনের নির্দিষ্ট পজিশন (উপরে / নিচে ও ডানে / বামে)</span>
+                      </span>
+                      {(currentYOffset !== 0 || currentXOffset !== 0) && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateLine(def.key, { yOffset: 0, xOffset: 0 })}
+                          className="text-[10px] text-slate-500 hover:text-rose-600 underline font-semibold cursor-pointer"
+                        >
+                          পজিশন রিসেট (০px)
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {/* Vertical Y-Offset (Up/Down) */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-semibold text-slate-700">১. উপরে / নিচে (Y-Offset):</span>
+                          <span className={`font-mono font-bold px-1.5 py-0.2 rounded border text-[11px] ${
+                            currentYOffset !== 0
+                              ? 'text-indigo-800 bg-indigo-50 border-indigo-200'
+                              : 'text-slate-700 bg-slate-50 border-slate-200'
+                          }`}>
+                            {currentYOffset > 0 ? `+${currentYOffset}` : currentYOffset} px
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLine(def.key, { yOffset: Math.max(-60, currentYOffset - 1) })}
+                            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                            title="উপরে তুলুন (-1px)"
+                          >
+                            ↑
+                          </button>
+                          <input
+                            type="range"
+                            min={-60}
+                            max={60}
+                            step={1}
+                            value={currentYOffset}
+                            onChange={(e) => handleUpdateLine(def.key, { yOffset: parseInt(e.target.value, 10) || 0 })}
+                            className="flex-1 accent-sky-600 h-1.5 cursor-pointer"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLine(def.key, { yOffset: Math.min(60, currentYOffset + 1) })}
+                            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                            title="নিচে নামান (+1px)"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1 pt-0.5 text-[9px]">
+                          {[
+                            { label: '-8px উপরে', val: -8 },
+                            { label: '-4px উপরে', val: -4 },
+                            { label: '০px ডিফল্ট', val: 0 },
+                            { label: '+4px নিচে', val: 4 },
+                            { label: '+8px নিচে', val: 8 },
+                          ].map((p) => (
+                            <button
+                              key={p.val}
+                              type="button"
+                              onClick={() => handleUpdateLine(def.key, { yOffset: p.val })}
+                              className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                                currentYOffset === p.val
+                                  ? 'bg-sky-600 text-white border-sky-600 font-bold'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Horizontal X-Offset (Left/Right) */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-semibold text-slate-700">২. ডানে / বামে (X-Offset):</span>
+                          <span className={`font-mono font-bold px-1.5 py-0.2 rounded border text-[11px] ${
+                            currentXOffset !== 0
+                              ? 'text-indigo-800 bg-indigo-50 border-indigo-200'
+                              : 'text-slate-700 bg-slate-50 border-slate-200'
+                          }`}>
+                            {currentXOffset > 0 ? `+${currentXOffset}` : currentXOffset} px
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLine(def.key, { xOffset: Math.max(-100, currentXOffset - 1) })}
+                            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                            title="বামে সরান (-1px)"
+                          >
+                            ←
+                          </button>
+                          <input
+                            type="range"
+                            min={-100}
+                            max={100}
+                            step={1}
+                            value={currentXOffset}
+                            onChange={(e) => handleUpdateLine(def.key, { xOffset: parseInt(e.target.value, 10) || 0 })}
+                            className="flex-1 accent-sky-600 h-1.5 cursor-pointer"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLine(def.key, { xOffset: Math.min(100, currentXOffset + 1) })}
+                            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 active:bg-slate-300 font-bold text-slate-800 flex items-center justify-center text-xs cursor-pointer shadow-2xs select-none"
+                            title="ডানে সরান (+1px)"
+                          >
+                            →
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1 pt-0.5 text-[9px]">
+                          {[
+                            { label: '-10px বামে', val: -10 },
+                            { label: '-4px বামে', val: -4 },
+                            { label: '০px ডিফল্ট', val: 0 },
+                            { label: '+4px ডানে', val: 4 },
+                            { label: '+10px ডানে', val: 10 },
+                          ].map((p) => (
+                            <button
+                              key={p.val}
+                              type="button"
+                              onClick={() => handleUpdateLine(def.key, { xOffset: p.val })}
+                              className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                                currentXOffset === p.val
+                                  ? 'bg-sky-600 text-white border-sky-600 font-bold'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

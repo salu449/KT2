@@ -17,6 +17,16 @@ export interface PadCalibration {
   nameArabicYOffset?: number; // Fine Y offset for Arabic Name
   nameEnglishYOffset?: number; // Fine Y offset for English Name
 
+  // Right Column Individual X & Y (Visa Number, Issue Date, Reference, Birth Date)
+  visaNumberXOffset?: number;
+  visaNumberYOffset?: number;
+  issueDateXOffset?: number;
+  issueDateYOffset?: number;
+  referenceNumberXOffset?: number;
+  referenceNumberYOffset?: number;
+  birthDateXOffset?: number;
+  birthDateYOffset?: number;
+
   // 1. Expiry Date (Individual X & Y)
   expiryDateXOffset: number;
   expiryDateYOffset?: number;
@@ -46,6 +56,10 @@ export interface PadCalibration {
   mrzFontWeight?: string | number;  // 'normal' | 'medium' | 'bold' | 'extrabold' | 400 | 600 | 700 | 900
   mrzColor?: string; // Hex/rgb color e.g. '#222222' (slightly lighter than pure black)
   mrzOpacity?: number; // 0.50 to 1.00 (default 0.92 for slightly softer print)
+  mrzLine1XOffset?: number;
+  mrzLine1YOffset?: number;
+  mrzLine2XOffset?: number;
+  mrzLine2YOffset?: number;
 
   // 6. Individual Line Fonts & Print Styles
   lineStyles?: LineStylesConfig;
@@ -71,6 +85,14 @@ export const defaultCalibration: PadCalibration = {
   nameLineSpacing: 0,
   nameArabicYOffset: 0,
   nameEnglishYOffset: 0,
+  visaNumberXOffset: 0,
+  visaNumberYOffset: 0,
+  issueDateXOffset: 0,
+  issueDateYOffset: 0,
+  referenceNumberXOffset: 0,
+  referenceNumberYOffset: 0,
+  birthDateXOffset: 0,
+  birthDateYOffset: 0,
   expiryDateXOffset: 0,
   expiryDateYOffset: 0,
   passportNoXOffset: 0,
@@ -388,5 +410,72 @@ export function getLineStyle(
     letterSpacing,
     display: isVisible ? undefined : 'none',
     color: custom?.color,
+  };
+}
+
+export function getLineOffsets(
+  key: LineKey,
+  calibration?: PadCalibration
+): { x: number; y: number } {
+  if (!calibration) return { x: 0, y: 0 };
+  const custom = calibration.lineStyles?.[key];
+  const customX = custom?.xOffset || 0;
+  const customY = custom?.yOffset || 0;
+
+  let directX = 0;
+  let directY = 0;
+
+  switch (key) {
+    case 'visaNumber':
+      directX = calibration.visaNumberXOffset || 0;
+      directY = calibration.visaNumberYOffset || 0;
+      break;
+    case 'issueDate':
+      directX = calibration.issueDateXOffset || 0;
+      directY = calibration.issueDateYOffset || 0;
+      break;
+    case 'referenceNumber':
+      directX = calibration.referenceNumberXOffset || 0;
+      directY = calibration.referenceNumberYOffset || 0;
+      break;
+    case 'birthDate':
+      directX = calibration.birthDateXOffset || 0;
+      directY = calibration.birthDateYOffset || 0;
+      break;
+    case 'expiryDate':
+      directX = calibration.expiryDateXOffset || 0;
+      directY = calibration.expiryDateYOffset || 0;
+      break;
+    case 'passportNumber':
+      directX = calibration.passportNoXOffset || 0;
+      directY = calibration.passportNoYOffset || 0;
+      break;
+    case 'passportIssueDate':
+      directX = calibration.passportIssueDateXOffset || 0;
+      directY = calibration.passportIssueDateYOffset || 0;
+      break;
+    case 'passportExpiryDate':
+      directX = calibration.passportExpiryDateXOffset || 0;
+      directY = calibration.passportExpiryDateYOffset || 0;
+      break;
+    case 'nameArabic':
+      directY = (calibration.nameArabicYOffset || 0);
+      break;
+    case 'nameEnglish':
+      directY = (calibration.nameEnglishYOffset || 0);
+      break;
+    case 'mrzLine1':
+      directX = calibration.mrzLine1XOffset || 0;
+      directY = calibration.mrzLine1YOffset || 0;
+      break;
+    case 'mrzLine2':
+      directX = calibration.mrzLine2XOffset || 0;
+      directY = calibration.mrzLine2YOffset || 0;
+      break;
+  }
+
+  return {
+    x: directX + customX,
+    y: directY + customY,
   };
 }

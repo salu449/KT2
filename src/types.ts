@@ -27,6 +27,8 @@ export interface LineFontConfig {
   letterSpacing?: string; // e.g. '0.08em', 'normal', '1px'
   visible?: boolean; // whether to print/show this line
   color?: string; // custom text color
+  yOffset?: number; // individual Y offset (up / down in px)
+  xOffset?: number; // individual X offset (left / right in px)
 }
 
 export type LineKey =

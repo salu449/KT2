@@ -2,7 +2,7 @@ import React from 'react';
 import { KuwaitEVisaData } from '../types';
 import { generateKuwaitMrz, formatMrzLine1Name } from '../utils/mrzGenerator';
 import { formatToYYYYMMDD } from '../utils/dateFormatter';
-import { PadCalibration, defaultCalibration, getLineStyle } from '../services/padService';
+import { PadCalibration, defaultCalibration, getLineStyle, getLineOffsets } from '../services/padService';
 import { MrzLine } from './MrzRenderer';
 
 interface PadOverlayProps {
@@ -68,6 +68,20 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
   const mrz1Style = getLineStyle('mrzLine1', calibration, 'Orator Std');
   const mrz2Style = getLineStyle('mrzLine2', calibration, 'Orator Std');
 
+  // Computed Individual Line Offsets (Individual Up / Down & Left / Right)
+  const visaOffsets = getLineOffsets('visaNumber', calibration);
+  const issueDateOffsets = getLineOffsets('issueDate', calibration);
+  const refNoOffsets = getLineOffsets('referenceNumber', calibration);
+  const arabicNameOffsets = getLineOffsets('nameArabic', calibration);
+  const englishNameOffsets = getLineOffsets('nameEnglish', calibration);
+  const birthDateOffsets = getLineOffsets('birthDate', calibration);
+  const expiryOffsets = getLineOffsets('expiryDate', calibration);
+  const passportNoOffsets = getLineOffsets('passportNumber', calibration);
+  const passportIssueOffsets = getLineOffsets('passportIssueDate', calibration);
+  const passportExpiryOffsets = getLineOffsets('passportExpiryDate', calibration);
+  const mrz1Offsets = getLineOffsets('mrzLine1', calibration);
+  const mrz2Offsets = getLineOffsets('mrzLine2', calibration);
+
   const fontStyle = {
     fontFamily: `"${data.fontFamily || 'Myanmar Text'}", "Cairo", "Segoe UI", Arial, sans-serif`,
   };
@@ -116,8 +130,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {expiryStyle.display !== 'none' && (
           <div
             style={{
-              top: `${368 + oy + (calibration.expiryDateYOffset || 0)}px`,
-              left: `${expiryX}px`,
+              top: `${368 + oy + expiryOffsets.y}px`,
+              left: `${expiryX + expiryOffsets.x}px`,
               ...expiryStyle,
             }}
             className="absolute font-bold text-slate-950 tracking-wide whitespace-nowrap select-all font-myanmar-bold"
@@ -134,8 +148,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {passportNoStyle.display !== 'none' && (
           <div
             style={{
-              top: `${464 + oy + (calibration.passportNoYOffset || 0)}px`,
-              left: `${passportCenterX + (calibration.passportNoXOffset || 0)}px`,
+              top: `${464 + oy + passportNoOffsets.y}px`,
+              left: `${passportCenterX + passportNoOffsets.x}px`,
               transform: 'translateX(-50%)',
               ...passportNoStyle,
             }}
@@ -149,8 +163,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {passportIssueStyle.display !== 'none' && (
           <div
             style={{
-              top: `${500 + oy + (calibration.passportIssueDateYOffset || 0)}px`,
-              left: `${passportCenterX + (calibration.passportIssueDateXOffset || 0)}px`,
+              top: `${500 + oy + passportIssueOffsets.y}px`,
+              left: `${passportCenterX + passportIssueOffsets.x}px`,
               transform: 'translateX(-50%)',
               ...passportIssueStyle,
             }}
@@ -164,8 +178,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {passportExpiryStyle.display !== 'none' && (
           <div
             style={{
-              top: `${522 + oy + (calibration.passportExpiryDateYOffset || 0)}px`,
-              left: `${passportCenterX + (calibration.passportExpiryDateXOffset || 0)}px`,
+              top: `${522 + oy + passportExpiryOffsets.y}px`,
+              left: `${passportCenterX + passportExpiryOffsets.x}px`,
               transform: 'translateX(-50%)',
               ...passportExpiryStyle,
             }}
@@ -183,8 +197,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {visaNoStyle.display !== 'none' && (
           <div
             style={{
-              top: `${322 + oy}px`,
-              right: `${rightColMargin}px`,
+              top: `${322 + oy + visaOffsets.y}px`,
+              right: `${rightColMargin - visaOffsets.x}px`,
               ...visaNoStyle,
             }}
             className="absolute font-bold text-slate-950 tracking-wide text-right whitespace-nowrap select-all font-myanmar-bold"
@@ -197,8 +211,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {issueDateStyle.display !== 'none' && (
           <div
             style={{
-              top: `${368 + oy}px`,
-              right: `${rightColMargin}px`,
+              top: `${368 + oy + issueDateOffsets.y}px`,
+              right: `${rightColMargin - issueDateOffsets.x}px`,
               ...issueDateStyle,
             }}
             className="absolute font-bold text-slate-950 tracking-wide text-right whitespace-nowrap select-all font-myanmar-bold"
@@ -211,8 +225,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {refNoStyle.display !== 'none' && (
           <div
             style={{
-              top: `${413 + oy}px`,
-              right: `${rightColMargin}px`,
+              top: `${413 + oy + refNoOffsets.y}px`,
+              right: `${rightColMargin - refNoOffsets.x}px`,
               ...refNoStyle,
             }}
             className="absolute font-bold text-slate-950 tracking-wide text-right whitespace-nowrap select-all font-myanmar-bold"
@@ -226,8 +240,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
           <div
             dir="rtl"
             style={{
-              top: `${462 + oy + (calibration.nameYOffset || 0) + (calibration.nameArabicYOffset || 0)}px`,
-              right: `${rightColMargin - (calibration.nameXOffset || 0)}px`,
+              top: `${462 + oy + (calibration.nameYOffset || 0) + arabicNameOffsets.y}px`,
+              right: `${rightColMargin - (calibration.nameXOffset || 0) - arabicNameOffsets.x}px`,
               ...arabicNameStyle,
             }}
             className="absolute font-bold text-slate-950 text-right whitespace-nowrap select-all leading-tight font-myanmar-bold"
@@ -240,8 +254,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {englishNameStyle.display !== 'none' && (
           <div
             style={{
-              top: `${488 + oy + (calibration.nameYOffset || 0) + (calibration.nameLineSpacing !== undefined ? calibration.nameLineSpacing : (data.nameLineSpacing || 0)) + (calibration.nameEnglishYOffset || 0)}px`,
-              right: `${rightColMargin - (calibration.nameXOffset || 0)}px`,
+              top: `${488 + oy + (calibration.nameYOffset || 0) + (calibration.nameLineSpacing !== undefined ? calibration.nameLineSpacing : (data.nameLineSpacing || 0)) + englishNameOffsets.y}px`,
+              right: `${rightColMargin - (calibration.nameXOffset || 0) - englishNameOffsets.x}px`,
               ...englishNameStyle,
             }}
             className="absolute font-bold text-slate-950 text-right whitespace-nowrap uppercase tracking-wide select-all font-myanmar-bold"
@@ -254,8 +268,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
         {birthDateStyle.display !== 'none' && (
           <div
             style={{
-              top: `${526 + oy}px`,
-              right: `${rightColMargin}px`,
+              top: `${526 + oy + birthDateOffsets.y}px`,
+              right: `${rightColMargin - birthDateOffsets.x}px`,
               ...birthDateStyle,
             }}
             className="absolute font-bold text-slate-950 tracking-wide text-right whitespace-nowrap select-all font-myanmar-bold"
@@ -275,7 +289,10 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
           className="absolute leading-none uppercase whitespace-nowrap select-all flex flex-col gap-[7px]"
         >
           {mrz1Style.display !== 'none' && (
-            <div style={mrz1Style}>
+            <div style={{
+              ...mrz1Style,
+              transform: (mrz1Offsets.x !== 0 || mrz1Offsets.y !== 0) ? `translate(${mrz1Offsets.x}px, ${mrz1Offsets.y}px)` : undefined,
+            }}>
               <MrzLine
                 line={mrzLine1}
                 chevronScaleY={chevronScaleY}
@@ -289,7 +306,10 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
             </div>
           )}
           {mrz2Style.display !== 'none' && (
-            <div style={mrz2Style}>
+            <div style={{
+              ...mrz2Style,
+              transform: (mrz2Offsets.x !== 0 || mrz2Offsets.y !== 0) ? `translate(${mrz2Offsets.x}px, ${mrz2Offsets.y}px)` : undefined,
+            }}>
               <MrzLine
                 line={mrzLine2}
                 chevronScaleY={chevronScaleY}
