@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Orator Std';
+  src: url('/fonts/OratorStd.woff') format('woff'),
+       url('https://fonts.cdnfonts.com/s/13889/OratorStd.woff') format('woff'),
+       local('Orator Std Bold'),
+       local('Orator Std'),
+       local('OratorStd');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Orator Std';
+  src: url('/fonts/OratorStd.woff') format('woff'),
+       url('https://fonts.cdnfonts.com/s/13889/OratorStd.woff') format('woff'),
+       local('Orator Std Bold'),
+       local('Orator Std'),
+       local('OratorStd');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myanmar Text';
+  src: local('Myanmar Text Bold'),
+       local('Myanmar Text'),
+       local('MyanmarText'),
+       local('MyanmarText-Bold'),
+       local('Noto Sans Myanmar');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myanmar Text';
+  src: local('Myanmar Text'),
+       local('MyanmarText'),
+       local('Noto Sans Myanmar');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-myanmar-bold {
+  font-family: 'Myanmar Text', 'MyanmarText', 'Noto Sans Myanmar', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.font-orator-bold,
+.font-orator-mrz {
+  font-family: 'Orator Std', 'OratorStd', 'Share Tech Mono', monospace !important;
+  font-weight: 700 !important;
+  font-style: normal;
+  font-synthesis: weight;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  color: #000000;
+}
+
+.mrz-stroke {
+  /* Bold optical stroke matching applicant name */
+  paint-order: stroke fill;
+  text-shadow: none;
+  font-synthesis: weight;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-family: 'Myanmar Text', 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 700;
+  }
+}
+
+/* Print CSS rules for crisp 1:1 A4 Document output */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #kuwait-evisa-print-canvas,
+  #kuwait-evisa-print-canvas * {
+    visibility: visible;
+  }
+  #kuwait-evisa-print-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <!-- Rounded Base Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <!-- Circular Accent Crest -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="4" />
+  <circle cx="256" cy="256" r="172" fill="none" stroke="#38bdf8" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="8 8" />
+  <!-- Document Silhouette -->
+  <g filter="url(#shadow)">
+    <rect x="146" y="110" width="220" height="292" rx="20" fill="#ffffff" />
+    <!-- Document Header Stripe -->
+    <path d="M 146 130 C 146 119 155 110 166 110 L 346 110 C 357 110 366 119 366 130 L 366 160 L 146 160 Z" fill="#0284c7" />
+    <!-- Golden Emblem / Seal -->
+    <circle cx="256" cy="160" r="28" fill="url(#gold)" stroke="#ffffff" stroke-width="3" />
+    <path d="M 256 146 L 261 156 L 272 158 L 264 165 L 266 176 L 256 170 L 246 176 L 248 165 L 240 158 L 251 156 Z" fill="#ffffff" />
+    
+    <!-- Text Lines -->
+    <rect x="180" y="210" width="152" height="12" rx="6" fill="#cbd5e1" />
+    <rect x="180" y="236" width="110" height="10" rx="5" fill="#e2e8f0" />
+    <rect x="180" y="258" width="130" height="10" rx="5" fill="#e2e8f0" />
+    
+    <!-- Security QR Badge -->
+    <rect x="180" y="292" width="70" height="70" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+    <rect x="190" y="302" width="18" height="18" fill="#0284c7" />
+    <rect x="222" y="302" width="18" height="18" fill="#0284c7" />
+    <rect x="190" y="334" width="18" height="18" fill="#0284c7" />
+    <rect x="222" y="334" width="10" height="10" fill="#0284c7" />
+    <!-- Approved Badge / Checkmark -->
+    <circle cx="316" cy="330" r="24" fill="#10b981" stroke="#ffffff" stroke-width="3" />
+    <path d="M 306 330 L 313 337 L 327 323" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <!-- Bottom App Name Label -->
+  <text x="256" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">Kuwait eVisa</text>
+</svg>
