@@ -56,6 +56,7 @@ export interface PadCalibration {
   mrzFontWeight?: string | number;  // 'normal' | 'medium' | 'bold' | 'extrabold' | 400 | 600 | 700 | 900
   mrzColor?: string; // Hex/rgb color e.g. '#222222' (slightly lighter than pure black)
   mrzOpacity?: number; // 0.50 to 1.00 (default 0.92 for slightly softer print)
+  mrz2BgdScale?: number; // Scale for BGD / Nationality in MRZ Line 2 (default 0.82 = 82% smaller)
   mrzLine1XOffset?: number;
   mrzLine1YOffset?: number;
   mrzLine2XOffset?: number;
@@ -111,6 +112,7 @@ export const defaultCalibration: PadCalibration = {
   mrzFontWeight: 'bold',
   mrzColor: '#222222', // Slightly lighter authentic color (not harsh black)
   mrzOpacity: 0.92,   // 92% slightly lighter tone
+  mrz2BgdScale: 0.82, // BGD in Line 2 is slightly smaller matching original Kuwait visa
   lineStyles: {},
 };
 

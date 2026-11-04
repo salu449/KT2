@@ -42,6 +42,7 @@ import {
 import { MrzLine } from './MrzRenderer';
 import { LineFontManager } from './LineFontManager';
 import { PadCalibration, savePadSettings } from '../services/padService';
+import { transliterateToArabic } from '../services/programmaticPassportExtractor';
 
 interface EditorFormProps {
   data: KuwaitEVisaData;
@@ -73,6 +74,32 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
     }, 2000);
   };
 
+  // Auto-compose full English name from Given Name + Surname + Father's Name
+  const handleComposeFullName = (overrideGiven?: string, overrideSurname?: string, overrideFather?: string) => {
+    const g = (overrideGiven !== undefined ? overrideGiven : (data.givenName || '')).trim().toUpperCase();
+    const s = (overrideSurname !== undefined ? overrideSurname : (data.surname || '')).trim().toUpperCase();
+    const f = (overrideFather !== undefined ? overrideFather : (data.fatherName || '')).trim().toUpperCase();
+    
+    const parts = [g, s, f].filter(Boolean);
+    const combined = parts.join(' ').replace(/\s+/g, ' ').trim();
+    const updates: Partial<KuwaitEVisaData> = {};
+    if (combined) {
+      updates.nameEnglish = combined;
+    }
+    if (overrideGiven !== undefined) updates.givenName = g;
+    if (overrideSurname !== undefined) updates.surname = s;
+    if (overrideFather !== undefined) updates.fatherName = f;
+    onChange(updates);
+  };
+
+  const handleAutoTranslateArabic = () => {
+    if (!data.nameEnglish) return;
+    const arabic = transliterateToArabic(data.nameEnglish);
+    if (arabic) {
+      onChange({ nameArabic: arabic });
+    }
+  };
+
   // Name lines spacing helper (inter-line gap between Arabic & English name)
   const currentLineSpacing =
     calibration?.nameLineSpacing !== undefined
@@ -99,6 +126,7 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
   const currentChevronScaleX = calibration?.mrzChevronScaleX !== undefined ? calibration.mrzChevronScaleX : 1.0;
   const currentMrzColor = calibration?.mrzColor || '#222222';
   const currentMrzOpacity = calibration?.mrzOpacity !== undefined ? calibration.mrzOpacity : 0.92;
+  const currentMrz2BgdScale = calibration?.mrz2BgdScale !== undefined ? calibration.mrz2BgdScale : 0.82;
 
   const handleUpdateMrzCal = (patch: Partial<PadCalibration>) => {
     if (calibration && onCalibrationChange) {
@@ -804,20 +832,30 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
               <label className="text-xs font-bold text-slate-800">
                 الاسم بالكامل (العربية):
               </label>
-              <button
-                type="button"
-                onClick={() => handleCopy('nameArabic', data.nameArabic)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:text-sky-700 bg-slate-100 rounded border border-slate-200 cursor-pointer"
-                title="Copy Arabic Name"
-                dir="ltr"
-              >
-                {copiedKey === 'nameArabic' ? (
-                  <Check className="w-3 h-3 text-emerald-600" />
-                ) : (
-                  <Copy className="w-3 h-3" />
-                )}
-                <span>{copiedKey === 'nameArabic' ? 'Copied' : 'Copy'}</span>
-              </button>
+              <div className="flex items-center gap-1.5" dir="ltr">
+                <button
+                  type="button"
+                  onClick={handleAutoTranslateArabic}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded border border-sky-200 cursor-pointer"
+                  title="ইংরেজি নাম থেকে স্বয়ংক্রিয় আরবি অনুবাদ তৈরি করুন"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-sky-600" />
+                  <span>অটো আরবি</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopy('nameArabic', data.nameArabic)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:text-sky-700 bg-slate-100 rounded border border-slate-200 cursor-pointer"
+                  title="Copy Arabic Name"
+                >
+                  {copiedKey === 'nameArabic' ? (
+                    <Check className="w-3 h-3 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                  <span>{copiedKey === 'nameArabic' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
             <input
               type="text"
@@ -827,6 +865,81 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
               placeholder="سيفاجول اسلام راجيك شمسود ميا"
               className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-base font-bold text-slate-900 focus:ring-2 focus:ring-sky-500"
             />
+          </div>
+
+          {/* Detailed Name Breakdown (Given Name, Surname, Father's Name) */}
+          <div className="md:col-span-2 bg-gradient-to-r from-slate-50 to-indigo-50/40 border border-slate-200 rounded-xl p-3 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                <span>নামের অংশসমূহ (Given Name, Surname ও বাবার নাম)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleComposeFullName()}
+                className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-lg font-semibold cursor-pointer inline-flex items-center gap-1"
+                title="Given Name + Surname + Father's Name একসাথে করে সম্পূর্ণ নাম সাজান"
+              >
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>সম্পূর্ণ নাম অটো-সিঙ্ক (Given + Surname + Father)</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* Given Name */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                  ১. Given Name (নামের প্রথম/মূল অংশ):
+                </label>
+                <input
+                  type="text"
+                  value={data.givenName || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    handleComposeFullName(val, undefined, undefined);
+                  }}
+                  placeholder="যেমন: MD SIDIKUR"
+                  className="w-full uppercase bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              {/* Surname */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                  ২. Surname (পারিবারিক পদবী):
+                </label>
+                <input
+                  type="text"
+                  value={data.surname || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    handleComposeFullName(undefined, val, undefined);
+                  }}
+                  placeholder="যেমন: RAHMAN বা ISLAM"
+                  className="w-full uppercase bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              {/* Father's Name */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                  ৩. Father's Name (পিতার নাম):
+                </label>
+                <input
+                  type="text"
+                  value={data.fatherName || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    handleComposeFullName(undefined, undefined, val);
+                  }}
+                  placeholder="যেমন: MD ABDUL GAFFAR"
+                  className="w-full uppercase bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500">
+              * কুয়েত ই-ভিসার নিয়মানুযায়ী আবেদনকারীর Given Name এবং Surname দুটোই এবং বাবার নাম সম্পূর্ণভাবে যুক্ত থাকবে।
+            </p>
           </div>
 
           {/* DEDICATED ARABIC & ENGLISH NAME SPACING CONTROLLER */}
@@ -1445,22 +1558,44 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
                     mrzChevronScaleX: 1.0,
                     mrzStrokeWidth: 0.22,
                     mrzFontWeight: 'bold',
+                    mrzColor: '#222222',
+                    mrzOpacity: 0.92,
+                    mrz2BgdScale: 0.82,
                   })}
                   className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
                   title="ডিফল্ট বোল্ড ও চেপা স্টাইলে রিসেট করুন"
                 >
-                  ডিফল্ট রিসেট
+                  ডিফল্ট রিসেট (চিহ্ন ০.৭৫x / BGD ০.৮২x)
                 </button>
               </div>
 
               {/* LIVE PREVIEW OF MRZ STROKE & SQUASH */}
               <div className="bg-white p-2.5 rounded-lg border border-slate-200 overflow-x-auto flex flex-col items-center justify-center shadow-inner">
                 <span className="text-[10px] font-sans font-bold text-slate-600 mb-1 self-start">
-                  লাইভ প্রিভিউ (চিহ্ন চেপাকরণ ও বোল্ডনেস এফেক্ট):
+                  লাইভ প্রিভিউ (MRZ ১ম ও ২য় লাইন, চেপা চিহ্ন এবং BGD সাইজ):
                 </span>
-                <div className="text-black py-1">
+                <div className="text-black py-1 flex flex-col gap-1.5 items-start">
                   <MrzLine
                     line={data.customMrzLine1 || formatMrzLine1Name(data.nameEnglish)}
+                    chevronScaleY={currentChevronScaleY}
+                    chevronScaleX={currentChevronScaleX}
+                    strokeWidth={currentMrzStroke}
+                    fontWeight={currentMrzWeight}
+                    color={currentMrzColor}
+                    opacity={currentMrzOpacity}
+                  />
+                  <MrzLine
+                    line={data.customMrzLine2 || generateKuwaitMrz({
+                      fullNameEnglish: data.nameEnglish,
+                      visaNumber: data.visaNumber,
+                      referenceNumber: data.referenceNumber,
+                      nationalityEnglish: data.nationalityEnglish,
+                      dateOfBirth: data.birthDate,
+                      sex: data.sexEnglish,
+                      issueDate: data.issueDate,
+                    }).line2}
+                    isLine2={true}
+                    bgdScale={currentMrz2BgdScale}
                     chevronScaleY={currentChevronScaleY}
                     chevronScaleX={currentChevronScaleX}
                     strokeWidth={currentMrzStroke}
@@ -1778,6 +1913,84 @@ export const VisaEditorForm: React.FC<EditorFormProps> = ({
                         >
                           <span className="w-2 h-2 rounded-full inline-block border border-white/20" style={{ backgroundColor: p.color, opacity: p.opacity }} />
                           <span>{p.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* CONTROL 6: MRZ LINE 2 BGD SIZE CONTROL */}
+                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                      <span>৬. MZ ২য় লাইনে BGD অক্ষরের সাইজ (MRZ Line 2 BGD Size)</span>
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-amber-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
+                      {currentMrz2BgdScale === 0.82
+                        ? '🔥 ০.৮২x (৮২% ছোট - রেফারেন্স)'
+                        : `${currentMrz2BgdScale.toFixed(2)}x (${Math.round(currentMrz2BgdScale * 100)}% সাইজ)`}
+                    </span>
+                  </div>
+
+                  {/* Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>BGD অক্ষরের আকার (ছোট ↔ বড়):</span>
+                      <span className="font-mono text-amber-300 font-bold">{Math.round(currentMrz2BgdScale * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateMrzCal({ mrz2BgdScale: Math.max(0.50, Number((currentMrz2BgdScale - 0.03).toFixed(2))) })}
+                        className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold flex items-center justify-center cursor-pointer border border-slate-700 active:scale-95 text-xs"
+                        title="BGD আরও ছোট করুন"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="range"
+                        min={0.50}
+                        max={1.10}
+                        step={0.01}
+                        value={currentMrz2BgdScale}
+                        onChange={(e) => handleUpdateMrzCal({ mrz2BgdScale: parseFloat(e.target.value) })}
+                        className="flex-1 accent-amber-500 h-1.5 cursor-pointer"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateMrzCal({ mrz2BgdScale: Math.min(1.10, Number((currentMrz2BgdScale + 0.03).toFixed(2))) })}
+                        className="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold flex items-center justify-center cursor-pointer border border-slate-700 active:scale-95 text-xs"
+                        title="BGD বড় করুন"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Presets */}
+                  <div className="flex flex-wrap items-center gap-1 pt-1 text-[10px]">
+                    <span className="text-slate-500 font-medium">সাইজ প্রিসেট:</span>
+                    {[
+                      { label: '🔥 ০.৮২x (পারফেক্ট ছোট - রেফারেন্স)', val: 0.82 },
+                      { label: '০.৭৫x (আরও ছোট)', val: 0.75 },
+                      { label: '০.৬৮x (মিনি)', val: 0.68 },
+                      { label: '০.৮৮x (সামান্য ছোট)', val: 0.88 },
+                      { label: '১.০০x (সমান সাইজ)', val: 1.0 },
+                    ].map((p) => {
+                      const isSel = Math.abs(currentMrz2BgdScale - p.val) < 0.015;
+                      return (
+                        <button
+                          key={p.label}
+                          type="button"
+                          onClick={() => handleUpdateMrzCal({ mrz2BgdScale: p.val })}
+                          className={`px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                            isSel
+                              ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold shadow-2xs'
+                              : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {p.label}
                         </button>
                       );
                     })}

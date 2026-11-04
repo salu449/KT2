@@ -294,21 +294,33 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
                 mrzFontWeight: 'bold',
                 mrzColor: '#222222',
                 mrzOpacity: 0.92,
+                mrz2BgdScale: 0.82,
               })}
               className="text-[10px] text-emerald-700 hover:text-emerald-900 underline font-semibold cursor-pointer"
             >
-              ডিফল্ট রিসেট (০.৭৫x / ০.২২px / ৯২% ডার্ক)
+              ডিফল্ট রিসেট (০.৭৫x / ০.২২px / ৯২% ডার্ক / BGD ০.৮২x)
             </button>
           </div>
 
           {/* Quick Live Preview */}
-          <div className="bg-white p-2 rounded-lg border border-emerald-200 overflow-x-auto flex flex-col items-center justify-center">
-            <span className="text-[10px] text-slate-500 font-semibold mb-0.5 self-start">
-              লাইভ প্রিভিউ (চিহ্ন, ফন্ট ও কালার শেড):
+          <div className="bg-white p-2.5 rounded-lg border border-emerald-200 overflow-x-auto flex flex-col items-center justify-center">
+            <span className="text-[10px] text-slate-500 font-semibold mb-1 self-start">
+              লাইভ প্রিভিউ (MRZ ১ম ও ২য় লাইন এবং BGD সাইজ):
             </span>
-            <div className="py-0.5">
+            <div className="py-0.5 flex flex-col gap-1.5 items-start">
               <MrzLine
                 line="VHKWISLAM<<MD<ABDUL<GAFFAR<<<<<<<<<<<<<<"
+                chevronScaleY={calibration.mrzChevronScaleY ?? 0.75}
+                chevronScaleX={calibration.mrzChevronScaleX ?? 1.0}
+                strokeWidth={calibration.mrzStrokeWidth ?? 0.22}
+                fontWeight={calibration.mrzFontWeight ?? 'bold'}
+                color={calibration.mrzColor}
+                opacity={calibration.mrzOpacity}
+              />
+              <MrzLine
+                line="2835517761BGD8802013M2609233373538093<<<<<<<<<<<<"
+                isLine2={true}
+                bgdScale={calibration.mrz2BgdScale ?? 0.82}
                 chevronScaleY={calibration.mrzChevronScaleY ?? 0.75}
                 chevronScaleX={calibration.mrzChevronScaleX ?? 1.0}
                 strokeWidth={calibration.mrzStrokeWidth ?? 0.22}
@@ -622,6 +634,79 @@ export const LineFontManager: React.FC<LineFontManagerProps> = ({
                     >
                       <span className="w-2 h-2 rounded-full inline-block border border-black/20" style={{ backgroundColor: p.color, opacity: p.opacity }} />
                       <span>{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 6. MRZ Line 2 BGD Size Control */}
+            <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-200 space-y-2 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-700" />
+                  <span>৬. ২য় লাইনে BGD অক্ষরের সাইজ (MRZ Line 2 BGD Size):</span>
+                </span>
+                <span className="font-mono font-bold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.2 rounded text-[11px]">
+                  {(calibration.mrz2BgdScale ?? 0.82) === 0.82
+                    ? '🔥 ০.৮২x (৮২% ছোট - রেফারেন্স)'
+                    : `${(calibration.mrz2BgdScale ?? 0.82).toFixed(2)}x (${Math.round((calibration.mrz2BgdScale ?? 0.82) * 100)}% সাইজ)`}
+                </span>
+              </div>
+
+              {/* Slider */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleUpdateMrz({ mrz2BgdScale: Math.max(0.50, Number(((calibration.mrz2BgdScale ?? 0.82) - 0.03).toFixed(2))) })}
+                  className="w-7 h-7 rounded bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center font-bold text-slate-700 cursor-pointer text-xs"
+                  title="BGD আরও ছোট করুন"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min={0.50}
+                  max={1.10}
+                  step={0.01}
+                  value={calibration.mrz2BgdScale ?? 0.82}
+                  onChange={(e) => handleUpdateMrz({ mrz2BgdScale: parseFloat(e.target.value) })}
+                  className="flex-1 accent-emerald-600 h-1.5 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleUpdateMrz({ mrz2BgdScale: Math.min(1.10, Number(((calibration.mrz2BgdScale ?? 0.82) + 0.03).toFixed(2))) })}
+                  className="w-7 h-7 rounded bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center font-bold text-slate-700 cursor-pointer text-xs"
+                  title="BGD বড় করুন"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Presets */}
+              <div className="flex flex-wrap items-center gap-1 pt-0.5 text-[10px]">
+                <span className="text-slate-500 font-medium">প্রিসেট:</span>
+                {[
+                  { label: '🔥 ০.৮২x (পারফেক্ট ছোট - রেফারেন্স)', val: 0.82 },
+                  { label: '০.৭৫x (আরও ছোট)', val: 0.75 },
+                  { label: '০.৬৮x (মিনি)', val: 0.68 },
+                  { label: '০.৮৮x (সামান্য ছোট)', val: 0.88 },
+                  { label: '১.০০x (সমান সাইজ)', val: 1.0 },
+                ].map((p) => {
+                  const currentScale = calibration.mrz2BgdScale ?? 0.82;
+                  const isSel = Math.abs(currentScale - p.val) < 0.015;
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => handleUpdateMrz({ mrz2BgdScale: p.val })}
+                      className={`px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                        isSel
+                          ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {p.label}
                     </button>
                   );
                 })}

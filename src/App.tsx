@@ -224,10 +224,34 @@ export default function App() {
     const today = getTodayDateString();
     const fourMonthsLater = calculate4MonthsExpiry(today);
 
+    const given = (passport.givenName || '').trim();
+    const surname = (passport.surname || '').trim();
+    const father = (passport.fatherName || '').trim();
+
+    let fullEnglish = (passport.fullNameEnglish || '').trim();
+    if (given && surname) {
+      if (!fullEnglish.includes(given) || !fullEnglish.includes(surname)) {
+        fullEnglish = [given, surname, father].filter(Boolean).join(' ');
+      }
+    } else if (given && !fullEnglish.includes(given)) {
+      fullEnglish = `${given} ${fullEnglish}`.trim();
+    } else if (surname && !fullEnglish.includes(surname)) {
+      fullEnglish = `${fullEnglish} ${surname}`.trim();
+    }
+
+    if (father && !fullEnglish.includes(father)) {
+      fullEnglish = `${fullEnglish} ${father}`.trim();
+    }
+    fullEnglish = fullEnglish.replace(/\s+/g, ' ').trim();
+
     setVisaData((prev) => ({
       ...prev,
-      nameEnglish: passport.fullNameEnglish || prev.nameEnglish,
+      nameEnglish: fullEnglish || prev.nameEnglish,
       nameArabic: passport.fullNameArabic || prev.nameArabic,
+      givenName: given || prev.givenName,
+      surname: surname || prev.surname,
+      fatherName: father || prev.fatherName,
+      motherName: passport.motherName || prev.motherName,
       passportNumber: passport.passportNumber || prev.passportNumber,
       nationalityEnglish: passport.nationalityEnglish || prev.nationalityEnglish,
       nationalityArabic: passport.nationalityArabic || prev.nationalityArabic,

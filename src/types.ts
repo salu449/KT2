@@ -73,6 +73,10 @@ export interface KuwaitEVisaData {
   occupationArabic: string;
   nameArabic: string;
   nameEnglish: string;
+  givenName?: string;
+  surname?: string;
+  fatherName?: string;
+  motherName?: string;
   birthDate: string; // YYYY-MM-DD
   sponsorDetails: string;
   issuingAuthorityArabic: string;

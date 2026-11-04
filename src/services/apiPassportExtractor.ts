@@ -24,6 +24,12 @@ export function optimizeImageFile(file: File): Promise<string> {
       return;
     }
 
+    // If small image (<= 800KB), send directly for fastest execution
+    if (file.size <= 800 * 1024) {
+      fileToBase64(file).then(resolve).catch(() => resolve(''));
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const rawBase64 = e.target?.result as string;
@@ -35,6 +41,7 @@ export function optimizeImageFile(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         try {
+          // 1600px ensures 100% sharp text while keeping payload light (~200KB)
           const maxDim = 1600;
           let width = img.width;
           let height = img.height;
@@ -62,7 +69,7 @@ export function optimizeImageFile(file: File): Promise<string> {
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 0.88 gives crystal-clear OCR text while keeping payload light (~200KB-400KB)
+          // 0.88 quality provides crisp text without excessive file size
           const compressed = canvas.toDataURL('image/jpeg', 0.88);
           resolve(compressed);
         } catch {
@@ -116,7 +123,7 @@ export async function extractPassportFromAPI(
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
           reject(new Error('পাসপোর্ট প্রসেস করতে সময় বেশি লেগেছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।'));
-        }, 75000);
+        }, 90000);
       });
 
       const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -142,12 +149,33 @@ export async function extractPassportFromAPI(
           throw new Error('পাসপোর্ট থেকে প্রয়োজনীয় তথ্য পাওয়া যায়নি।');
         }
 
+        const given = (d.givenName || '').toUpperCase().trim();
+        const surname = (d.surname || '').toUpperCase().trim();
+        const father = (d.fatherName || '').toUpperCase().trim();
+        
+        let fullEng = (d.fullNameEnglish || '').toUpperCase().trim();
+        // User Requirement: "নাম এবং বাবার নাম সম্পূর্ন থাকবে given name and surname দুটোই"
+        if (given && surname) {
+          if (!fullEng.includes(given) || !fullEng.includes(surname)) {
+            fullEng = [given, surname, father].filter(Boolean).join(' ');
+          }
+        } else if (given && !fullEng.includes(given)) {
+          fullEng = `${given} ${fullEng}`.trim();
+        } else if (surname && !fullEng.includes(surname)) {
+          fullEng = `${fullEng} ${surname}`.trim();
+        }
+
+        if (father && !fullEng.includes(father)) {
+          fullEng = `${fullEng} ${father}`.trim();
+        }
+        fullEng = fullEng.replace(/\s+/g, ' ').trim();
+
         return {
-          fullNameEnglish: (d.fullNameEnglish || '').toUpperCase().trim(),
+          fullNameEnglish: fullEng,
           fullNameArabic: (d.fullNameArabic || '').trim(),
-          givenName: d.givenName || '',
-          surname: d.surname || '',
-          fatherName: d.fatherName || '',
+          givenName: given,
+          surname: surname,
+          fatherName: father,
           motherName: d.motherName || '',
           passportNumber: (d.passportNumber || '').toUpperCase().trim(),
           dateOfBirth: d.dateOfBirth || '',

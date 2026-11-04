@@ -676,6 +676,15 @@ export const PadManagerModal: React.FC<PadManagerModalProps> = ({
                     0.01,
                     'x'
                   )}
+                  {renderSlider(
+                    '২য় লাইনে BGD সাইজ (BGD Scale)',
+                    calibration.mrz2BgdScale ?? 0.82,
+                    'mrz2BgdScale',
+                    0.50,
+                    1.10,
+                    0.01,
+                    'x'
+                  )}
                 </div>
               </div>
 

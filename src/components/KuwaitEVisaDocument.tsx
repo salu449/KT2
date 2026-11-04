@@ -453,6 +453,8 @@ const KuwaitEVisaFullDocument: React.FC<DocumentProps> = ({
                   <div style={getLineStyle('mrzLine2', calibration, 'Orator Std')}>
                     <MrzLine
                       line={mrz.line2}
+                      isLine2={true}
+                      bgdScale={calibration?.mrz2BgdScale ?? 0.82}
                       chevronScaleY={calibration?.mrzChevronScaleY !== undefined ? calibration.mrzChevronScaleY : 0.75}
                       chevronScaleX={calibration?.mrzChevronScaleX !== undefined ? calibration.mrzChevronScaleX : 1.0}
                       letterSpacing={getLineStyle('mrzLine2', calibration).letterSpacing || '0.11em'}

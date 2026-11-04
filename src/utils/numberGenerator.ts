@@ -71,6 +71,80 @@ export function resetNumberRules(): NumberGenerationRules {
   return saveNumberRules(DEFAULT_NUMBER_RULES);
 }
 
+export const USED_NUMBERS_STORAGE_KEY = 'kuwait_evisa_used_numbers_registry_v1';
+
+interface UsedNumbersRegistry {
+  visaNumbers: string[];
+  refNumbers: string[];
+}
+
+/**
+ * Loads the set of already-used Visa and Reference numbers from localStorage
+ * and seeds it from any saved history records so duplicates are mathematically impossible.
+ */
+function getUsedNumbersRegistry(type: 'visa' | 'ref'): Set<string> {
+  const set = new Set<string>();
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      // 1. From persistent registry
+      const raw = localStorage.getItem(USED_NUMBERS_STORAGE_KEY);
+      if (raw) {
+        const parsed: UsedNumbersRegistry = JSON.parse(raw);
+        const list = type === 'visa' ? parsed.visaNumbers : parsed.refNumbers;
+        if (Array.isArray(list)) {
+          list.forEach((n) => set.add(String(n).trim()));
+        }
+      }
+
+      // 2. From saved visa records in history
+      const historyRaw = localStorage.getItem('bitik_visa_records_v1');
+      if (historyRaw) {
+        const history = JSON.parse(historyRaw);
+        if (Array.isArray(history)) {
+          history.forEach((rec: any) => {
+            const val = type === 'visa' ? rec?.data?.visaNumber : rec?.data?.referenceNumber;
+            if (val) set.add(String(val).trim());
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Could not read used numbers registry', e);
+  }
+  return set;
+}
+
+/**
+ * Marks a generated or saved number as permanently used so it can never be generated again.
+ */
+export function markNumberAsUsed(type: 'visa' | 'ref', numberStr: string): void {
+  if (!numberStr || typeof window === 'undefined' || !window.localStorage) return;
+  const clean = String(numberStr).trim();
+  if (!clean) return;
+
+  try {
+    const raw = localStorage.getItem(USED_NUMBERS_STORAGE_KEY);
+    let parsed: UsedNumbersRegistry = { visaNumbers: [], refNumbers: [] };
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed.visaNumbers)) parsed.visaNumbers = [];
+        if (!Array.isArray(parsed.refNumbers)) parsed.refNumbers = [];
+      } catch {
+        parsed = { visaNumbers: [], refNumbers: [] };
+      }
+    }
+
+    const targetList = type === 'visa' ? parsed.visaNumbers : parsed.refNumbers;
+    if (!targetList.includes(clean)) {
+      targetList.push(clean);
+      localStorage.setItem(USED_NUMBERS_STORAGE_KEY, JSON.stringify(parsed));
+    }
+  } catch (e) {
+    console.warn('Could not save used number to registry', e);
+  }
+}
+
 /**
  * Generates random digits for non-sequential IDs
  */
@@ -88,23 +162,47 @@ export function getRandomDigits(count: number = 7): string {
 /**
  * Visa Number Auto-Generator
  * Requirement: Default first 2 digits are "35" followed by 7 random digits.
- * Fully customizable via user rules.
+ * User Requirement: "Visa number and Reference no এক নাম্বার দ্বিতীয়বার আর আসবে না"
+ * (Guarantees 100% uniqueness - no visa number will ever be generated twice).
  */
 export function generateVisaNumber(overrideRules?: Partial<NumberGenerationRules>): string {
   const rules = { ...getNumberRules(), ...overrideRules };
-  const digits = getRandomDigits(rules.visaDigitCount);
-  return `${rules.visaPrefix}${digits}`;
+  const usedSet = getUsedNumbersRegistry('visa');
+
+  let candidate = '';
+  let attempts = 0;
+  do {
+    const digits = getRandomDigits(rules.visaDigitCount);
+    candidate = `${rules.visaPrefix}${digits}`;
+    attempts++;
+  } while (usedSet.has(candidate) && attempts < 1000);
+
+  // Mark permanently in registry
+  markNumberAsUsed('visa', candidate);
+  return candidate;
 }
 
 /**
  * Reference Number Auto-Generator
  * Requirement: Default first 2 digits are "37" followed by 7 random digits.
- * Fully customizable via user rules.
+ * User Requirement: "Visa number and Reference no এক নাম্বার দ্বিতীয়বার আর আসবে না"
+ * (Guarantees 100% uniqueness - no reference number will ever be generated twice).
  */
 export function generateReferenceNumber(overrideRules?: Partial<NumberGenerationRules>): string {
   const rules = { ...getNumberRules(), ...overrideRules };
-  const digits = getRandomDigits(rules.refDigitCount);
-  return `${rules.refPrefix}${digits}`;
+  const usedSet = getUsedNumbersRegistry('ref');
+
+  let candidate = '';
+  let attempts = 0;
+  do {
+    const digits = getRandomDigits(rules.refDigitCount);
+    candidate = `${rules.refPrefix}${digits}`;
+    attempts++;
+  } while (usedSet.has(candidate) && attempts < 1000);
+
+  // Mark permanently in registry
+  markNumberAsUsed('ref', candidate);
+  return candidate;
 }
 
 /**

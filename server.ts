@@ -114,38 +114,58 @@ app.post("/api/extract-passport", async (req, res) => {
     // Clean base64 string
     const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "");
 
-    const prompt = `You are an expert OCR and passport data extraction specialist for Kuwait eVisa processing.
-Analyze this passport image / scan / document carefully.
-Extract all relevant passport fields accurately following these strict rules:
-1. English Full Name: Must include the applicant's name together with their Father's Name (e.g. If Given Name is 'AL AMIN' and Father's Name is 'ALTA MIAH', the full name MUST be 'AL AMIN ALTA MIAH').
-2. Arabic Full Name: Translate / transliterate the full name including Father's name into formal Arabic script (e.g. 'سيفاجول اسلام راجيك شمسود ميا').
-3. Given Name (e.g. AL AMIN)
-4. Surname (e.g. MIAH)
-5. Father's Name (e.g. ALTA MIAH)
-6. Mother's Name (e.g. TAJIRUN BEGUM)
-7. Passport Number (e.g. A16807009)
-8. Date of Birth in strict YYYY-MM-DD format (Year-Month-Day, e.g. 2003-11-01)
-9. Sex / Gender: 'M' for Male or 'F' for Female
-10. Nationality in English (e.g. 'BANGLADESH')
-11. Nationality in Arabic (e.g. 'بنغلاديش')
-12. Passport Issue Date in strict YYYY-MM-DD format (Year-Month-Day, e.g. 2024-11-07)
-13. Passport Expiry Date in strict YYYY-MM-DD format (Year-Month-Day, e.g. 2034-11-06)
-14. Passport Type: 'عادي' (Normal / Ordinary) or as specified on passport
-15. Place of Birth: e.g. MOULVIBAZAR
-16. Personal No / National ID if present (e.g. 5111728100)
+    const prompt = `You are a world-class OCR and international passport inspection expert specializing in Asian and Middle Eastern immigration documents, specifically for Kuwait Ministry of Interior (MOI) eVisa issuance.
 
-Return the data strictly conforming to the JSON schema.`;
+Analyze this passport image / scan / document with extreme accuracy. Follow these strict rules:
+
+1. NAME EXTRACTION (CRITICAL REQUIREMENT):
+   The user explicitly requires BOTH the applicant's Given Name AND Surname, PLUS Father's Name.
+   - BANGLADESH PASSPORT SPECIFIC RULES:
+     * In Bangladesh passports, 'Surname / বংশগত নাম' is printed first (e.g. 'HUDA'), and 'Given Name / প্রদত্ত নাম' is printed second right below it (e.g. 'NAZMUL').
+     * If the top page (Personal Data and Emergency Contact) is visible, check 'Name:' which states 'NAZMUL HUDA' and 'Father's Name:' which states 'JAMIR UDDIN'.
+     * In MRZ Line 1: 'P<BGDHUDA<<NAZMUL<<<<<' -> The part before '<<' is Surname ('HUDA'), and after '<<' is Given Name ('NAZMUL').
+     * YOU MUST NEVER OMIT OR DROP THE GIVEN NAME!
+     * 'givenName': MUST BE 'NAZMUL' (or applicant's given name).
+     * 'surname': MUST BE 'HUDA' (or applicant's surname).
+     * 'fatherName': MUST BE 'JAMIR UDDIN' (or applicant's father name).
+     * 'fullNameEnglish': MUST BE THE FULL COMBINED NAME: Given Name + Surname + Father's Name (e.g. 'NAZMUL HUDA JAMIR UDDIN').
+   - 'fullNameArabic': Formally translate/transliterate the full name into Arabic script (e.g. 'নাظم الهدى ضمير الدين' or 'محمد صديق الرحمن إسلام محمد عبد الغفار').
+
+2. DATES (STRICT YYYY-MM-DD FORMAT - CRITICAL):
+   - 'passportIssueDate': Look at 'Date of Issue / প্রদানের তারিখ' (e.g. '29 OCT 2026' -> MUST be '2026-10-29'). NEVER leave empty!
+   - 'passportExpiryDate': Look at 'Date of Expiry / মেয়াদোত্তীর্ণের তারিখ' (e.g. '28 OCT 2036' -> MUST be '2036-10-28'). NEVER leave empty! Cross-check with MRZ Line 2 chars 21-26 (e.g. '361028' -> '2036-10-28').
+   - 'dateOfBirth': Look at 'Date of Birth / জন্ম তারিখ' (e.g. '18 DEC 1978' -> MUST be '1978-12-18'). Cross-check with MRZ Line 2 chars 13-18 ('781218' -> '1978-12-18').
+
+3. MRZ (MACHINE READABLE ZONE) GROUND TRUTH VERIFICATION:
+   - Check the 2-line MRZ at the bottom of the passport bio-page (each line is 44 characters starting with P<... and 2nd line starting with the passport number).
+   - Line 1 contains: P<[CountryCode][Surname]<<[GivenNames] (e.g. P<BGDHUDA<<NAZMUL<<<<<<<<<<<<<<<<<<<<<<<<<<<<<)
+   - Line 2 contains: [PassportNumber][Check][Nationality][DOB YYMMDD][Check][Sex][Expiry YYMMDD][Check][PersonalNo]... (e.g. A099667418BGD7812189M36102841032916650<<<<<74)
+   - Extract 'mrzLine1' and 'mrzLine2' exactly if visible.
+
+4. PASSPORT NUMBER ACCURACY:
+   - Carefully verify every digit and letter (e.g. 'A09966741' or 'A16807009').
+
+5. GENDER & NATIONALITY:
+   - 'sex': 'M' for Male, 'F' for Female.
+   - 'sexArabic': 'ذكر' or 'أنثى'.
+   - 'nationalityEnglish': 'BANGLADESH', etc.
+   - 'nationalityArabic': 'بنغلاديش', etc.
+   - 'placeOfBirth': e.g. 'MEHERPUR', 'DHAKA', etc.
+   - 'personalNumber': e.g. '1032916650'.
+   - 'passportType': 'عادي'.
+
+Return strictly conforming JSON without markdown blocks.`;
 
     const schemaConfig = {
       type: Type.OBJECT,
       properties: {
-        fullNameEnglish: { type: Type.STRING, description: "Full name in English in uppercase" },
-        fullNameArabic: { type: Type.STRING, description: "Full name translated/transliterated into Arabic" },
-        givenName: { type: Type.STRING },
-        surname: { type: Type.STRING },
-        fatherName: { type: Type.STRING },
-        motherName: { type: Type.STRING },
-        passportNumber: { type: Type.STRING },
+        fullNameEnglish: { type: Type.STRING, description: "Full name in English in uppercase including Given Name + Surname + Father's Name" },
+        fullNameArabic: { type: Type.STRING, description: "Full name translated/transliterated into formal Arabic script" },
+        givenName: { type: Type.STRING, description: "Applicant given name / first name(s)" },
+        surname: { type: Type.STRING, description: "Applicant surname / family name" },
+        fatherName: { type: Type.STRING, description: "Father's full name" },
+        motherName: { type: Type.STRING, description: "Mother's full name if present" },
+        passportNumber: { type: Type.STRING, description: "Passport number verified against MRZ line 2" },
         dateOfBirth: { type: Type.STRING, description: "YYYY-MM-DD" },
         sex: { type: Type.STRING, description: "M or F" },
         sexArabic: { type: Type.STRING, description: "ذكر or أنثى" },
@@ -154,8 +174,10 @@ Return the data strictly conforming to the JSON schema.`;
         passportIssueDate: { type: Type.STRING, description: "YYYY-MM-DD" },
         passportExpiryDate: { type: Type.STRING, description: "YYYY-MM-DD" },
         passportType: { type: Type.STRING, description: "e.g. عادي" },
-        placeOfBirth: { type: Type.STRING },
-        personalNumber: { type: Type.STRING },
+        placeOfBirth: { type: Type.STRING, description: "District / City of birth" },
+        personalNumber: { type: Type.STRING, description: "NID or personal number" },
+        mrzLine1: { type: Type.STRING, description: "44-character MRZ line 1 if visible" },
+        mrzLine2: { type: Type.STRING, description: "44-character MRZ line 2 if visible" },
       },
       required: [
         "fullNameEnglish",
@@ -166,21 +188,22 @@ Return the data strictly conforming to the JSON schema.`;
       ],
     };
 
-    // Valid active models in priority order with resilient fallback
-    // gemini-3.8-flash is primary, fastest and most accurate for multimodal OCR
+    // Prioritize gemini-3.1-flash-lite for ultra-fast (2-4s) vision OCR without thinking latency,
+    // followed by gemini-3.8-flash with ThinkingLevel.LOW as robust fallback
     const candidateModels = [
-      "gemini-3.8-flash",
-      "gemini-flash-latest",
+      { name: "gemini-3.1-flash-lite", config: {} },
+      { name: "gemini-3.8-flash", config: { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } },
+      { name: "gemini-flash-latest", config: {} },
     ];
 
     let lastError: any = null;
     let extractedText = "";
 
-    for (const model of candidateModels) {
+    for (const candidate of candidateModels) {
+      const model = candidate.name;
       try {
         console.log(`Attempting passport OCR with model ${model}...`);
         
-        // 60-second timeout per candidate model so complex documents have sufficient time
         const apiCallPromise = ai.models.generateContent({
           model,
           contents: [
@@ -195,14 +218,13 @@ Return the data strictly conforming to the JSON schema.`;
           config: {
             responseMimeType: "application/json",
             responseSchema: schemaConfig,
-            ...(model.includes("3.8")
-              ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
-              : {}),
+            ...candidate.config,
           },
         });
 
+        // 55-second timeout per candidate model prevents premature cancellation on complex scans
         const perModelTimeout = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`Model ${model} request exceeded 60s timeout`)), 60000);
+          setTimeout(() => reject(new Error(`Model ${model} request exceeded 55s timeout`)), 55000);
         });
 
         const response = await Promise.race([apiCallPromise, perModelTimeout]);
@@ -232,7 +254,150 @@ Return the data strictly conforming to the JSON schema.`;
     }
 
     const parsedData = JSON.parse(extractedText);
-    return res.json({ success: true, data: parsedData });
+
+    // Helper: Normalize any date format (e.g. '29 OCT 2026', '28 OCT 2036', '781218', '29/10/2026') to strict YYYY-MM-DD
+    const normalizeServerDate = (input: string | undefined): string => {
+      if (!input) return "";
+      const trimmed = input.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+      const monthMap: Record<string, string> = {
+        JAN: "01", FEB: "02", MAR: "03", APR: "04", MAY: "05", JUN: "06",
+        JUL: "07", AUG: "08", SEP: "09", OCT: "10", NOV: "11", DEC: "12",
+      };
+
+      // Match '29 OCT 2026' or '29-OCT-2026'
+      const textMatch = trimmed.match(/^(\d{1,2})[\s\-/.]([A-Za-z]{3,})[\s\-/.](20\d{2}|19\d{2})$/);
+      if (textMatch) {
+        const day = textMatch[1].padStart(2, "0");
+        const mon = monthMap[textMatch[2].substring(0, 3).toUpperCase()];
+        const year = textMatch[3];
+        if (mon) return `${year}-${mon}-${day}`;
+      }
+
+      // Match 'OCT 29 2026'
+      const textMatch2 = trimmed.match(/^([A-Za-z]{3,})[\s\-/.](d{1,2})[\s\-/.](20\d{2}|19\d{2})$/);
+      if (textMatch2) {
+        const mon = monthMap[textMatch2[1].substring(0, 3).toUpperCase()];
+        const day = textMatch2[2].padStart(2, "0");
+        const year = textMatch2[3];
+        if (mon) return `${year}-${mon}-${day}`;
+      }
+
+      // Match DD/MM/YYYY or DD-MM-YYYY
+      const numMatch = trimmed.match(/^(\d{1,2})[\s\-/.](d{1,2})[\s\-/.](20\d{2}|19\d{2})$/);
+      if (numMatch) {
+        const day = numMatch[1].padStart(2, "0");
+        const mon = numMatch[2].padStart(2, "0");
+        const year = numMatch[3];
+        return `${year}-${mon}-${day}`;
+      }
+
+      // Match MRZ 6-digit YYMMDD
+      if (/^\d{6}$/.test(trimmed)) {
+        const yy = parseInt(trimmed.substring(0, 2), 10);
+        const mm = trimmed.substring(2, 4);
+        const dd = trimmed.substring(4, 6);
+        const currentYY = new Date().getFullYear() % 100;
+        const year = yy > currentYY + 20 ? `19${trimmed.substring(0, 2)}` : `20${trimmed.substring(0, 2)}`;
+        return `${year}-${mm}-${dd}`;
+      }
+
+      return trimmed;
+    };
+
+    // Deterministic MRZ Cross-Validation
+    let mrz1 = (parsedData.mrzLine1 || "").toUpperCase().replace(/\s+/g, "");
+    let mrz2 = (parsedData.mrzLine2 || "").toUpperCase().replace(/\s+/g, "");
+
+    // If MRZ Line 1 is present, extract Surname & Given Name
+    // Format: P<BGDHUDA<<NAZMUL<<<<<<<<<<<<<<<
+    if (mrz1 && mrz1.startsWith("P<")) {
+      const match = mrz1.match(/^P<[A-Z]{3}([A-Z0-9]+)<<([A-Z0-9<]+)/);
+      if (match) {
+        const surnameFromMrz = match[1].replace(/</g, " ").trim();
+        const givenFromMrz = match[2].replace(/</g, " ").trim();
+        if (!parsedData.surname) parsedData.surname = surnameFromMrz;
+        if (!parsedData.givenName || parsedData.givenName === parsedData.surname) {
+          parsedData.givenName = givenFromMrz;
+        }
+      }
+    }
+
+    // If MRZ Line 2 is present, extract Passport No, DOB, Sex, Expiry Date, Personal No
+    // Format: A099667418BGD7812189M36102841032916650<<<<<74 (44 chars)
+    if (mrz2 && mrz2.length >= 28) {
+      const mrzPass = mrz2.substring(0, 9).replace(/</g, "");
+      if (!parsedData.passportNumber && mrzPass) parsedData.passportNumber = mrzPass;
+
+      const mrzDob = mrz2.substring(13, 19);
+      if (!parsedData.dateOfBirth && /^\d{6}$/.test(mrzDob)) {
+        const yy = parseInt(mrzDob.substring(0, 2), 10);
+        const mm = mrzDob.substring(2, 4);
+        const dd = mrzDob.substring(4, 6);
+        const year = yy > 30 ? `19${mrzDob.substring(0, 2)}` : `20${mrzDob.substring(0, 2)}`;
+        parsedData.dateOfBirth = `${year}-${mm}-${dd}`;
+      }
+
+      const mrzSex = mrz2.charAt(20);
+      if (!parsedData.sex && (mrzSex === "M" || mrzSex === "F")) {
+        parsedData.sex = mrzSex;
+      }
+
+      const mrzExp = mrz2.substring(21, 27);
+      if ((!parsedData.passportExpiryDate || !parsedData.passportExpiryDate.includes("-")) && /^\d{6}$/.test(mrzExp)) {
+        const yy = mrzExp.substring(0, 2);
+        const mm = mrzExp.substring(2, 4);
+        const dd = mrzExp.substring(4, 6);
+        parsedData.passportExpiryDate = `20${yy}-${mm}-${dd}`;
+      }
+
+      const mrzPersonal = mrz2.substring(28).split("<")[0].trim();
+      if (!parsedData.personalNumber && mrzPersonal) {
+        parsedData.personalNumber = mrzPersonal;
+      }
+    }
+
+    // Normalize dates
+    parsedData.dateOfBirth = normalizeServerDate(parsedData.dateOfBirth);
+    parsedData.passportIssueDate = normalizeServerDate(parsedData.passportIssueDate);
+    parsedData.passportExpiryDate = normalizeServerDate(parsedData.passportExpiryDate);
+
+    // Normalize and clean extracted fields
+    const given = (parsedData.givenName || "").toUpperCase().trim();
+    const surname = (parsedData.surname || "").toUpperCase().trim();
+    const father = (parsedData.fatherName || "").toUpperCase().trim();
+    
+    // Ensure fullNameEnglish has BOTH Given Name and Surname and Father's Name
+    let fullEng = (parsedData.fullNameEnglish || "").toUpperCase().trim();
+    
+    // User Requirement: "নাম এবং বাবার নাম সম্পূর্ন থাকবে given name and surname দুটোই"
+    // (e.g. NAZMUL HUDA JAMIR UDDIN)
+    if (given && surname) {
+      if (!fullEng.includes(given) || !fullEng.includes(surname)) {
+        fullEng = [given, surname, father].filter(Boolean).join(" ");
+      }
+    } else if (given && !fullEng.includes(given)) {
+      fullEng = `${given} ${fullEng}`.trim();
+    } else if (surname && !fullEng.includes(surname)) {
+      fullEng = `${fullEng} ${surname}`.trim();
+    }
+
+    if (father && !fullEng.includes(father)) {
+      fullEng = `${fullEng} ${father}`.trim();
+    }
+
+    fullEng = fullEng.replace(/\s+/g, " ").trim();
+    if (fullEng) {
+      parsedData.fullNameEnglish = fullEng;
+    }
+
+    // Clean passport number (trim spaces, uppercase)
+    if (parsedData.passportNumber) {
+      parsedData.passportNumber = parsedData.passportNumber.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
+
+        return res.json({ success: true, data: parsedData });
   } catch (error: any) {
     console.error("Passport extraction error:", error);
     let msg = error?.message || "Failed to process passport image with Gemini AI.";

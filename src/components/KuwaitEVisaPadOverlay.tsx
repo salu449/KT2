@@ -312,6 +312,8 @@ export const KuwaitEVisaPadOverlay: React.FC<PadOverlayProps> = ({
             }}>
               <MrzLine
                 line={mrzLine2}
+                isLine2={true}
+                bgdScale={calibration?.mrz2BgdScale ?? 0.82}
                 chevronScaleY={chevronScaleY}
                 chevronScaleX={chevronScaleX}
                 letterSpacing={mrz2Style.letterSpacing || '0.11em'}
